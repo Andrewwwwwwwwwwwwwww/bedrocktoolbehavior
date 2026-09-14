@@ -16,6 +16,7 @@
       "environment": "client"
     }
   ],
+  "icon": "assets/bedrocktoolbehavior/icon.png",
   "contact": {
     "homepage": "https://github.com/Andrewwwwwwwwwwwwwww/bedrocktoolbehavior",
     "sources": "https://github.com/Andrewwwwwwwwwwwwwww/bedrocktoolbehavior",

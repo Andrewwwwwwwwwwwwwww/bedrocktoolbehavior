@@ -18,3 +18,5 @@ First release. Client-side hold-to-use pacing for hoes, shovels and axes on Fabr
   action-bar feedback.
 - Settings persist in `config/bedrocktoolbehavior.json`: per-tool switches, both delays, and the
   remembered-position window.
+- Mod icon built from the vanilla netherite shovel texture with the vanilla enchantment glint
+  scrolled over it; an animated version is in `branding/` for the project listing.
