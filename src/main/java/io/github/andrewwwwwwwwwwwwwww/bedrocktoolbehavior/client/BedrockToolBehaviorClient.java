@@ -45,8 +45,8 @@ public class BedrockToolBehaviorClient implements ClientModInitializer {
         });
 
         ToolBehaviorConfig cfg = ToolBehaviorConfig.get();
-        LOGGER.info("BedrockToolBehavior ready - enabled={}, hoe={}, shovel={}, axe={}, newBlockDelay={}, sameBlockDelay={}",
-                cfg.enabled, cfg.hoe, cfg.shovel, cfg.axe, cfg.newBlockDelay, cfg.sameBlockDelay);
+        LOGGER.info("BedrockToolBehavior ready - enabled={}, hoe={}, shovel={}, axe={}, pollDelay={}, sameBlockCooldown={}",
+                cfg.enabled, cfg.hoe, cfg.shovel, cfg.axe, cfg.pollDelay, cfg.sameBlockCooldown);
     }
 
     /** Action-bar toggle feedback: "BedrockToolBehavior: ON". */

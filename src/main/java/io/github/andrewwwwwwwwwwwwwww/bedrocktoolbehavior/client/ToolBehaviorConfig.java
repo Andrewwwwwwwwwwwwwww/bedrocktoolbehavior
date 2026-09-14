@@ -30,23 +30,21 @@ public class ToolBehaviorConfig {
     public boolean axe = true;
 
     /**
-     * Ticks to wait when the crosshair has moved onto a block we did not just use. 0-4.
-     * This is the setting that makes a sweep till every block instead of every fourth one.
+     * Ticks between checks while an enabled tool is held, 0-4. At 1 the client looks every tick,
+     * which is what lets a sweep catch every block it crosses; raising it reintroduces the blind
+     * gaps that make a sweep skip ground, and 4 is identical to vanilla.
      */
-    public int newBlockDelay = 1;
+    public int pollDelay = 1;
 
     /**
-     * Ticks to wait when the crosshair is still on a block we just used. 0-4, and 4 is vanilla.
-     * Leaving this at vanilla is what stops the mod re-firing at a block whose server-side change
-     * has not come back yet, which would otherwise stutter the tool sound.
+     * Ticks before the same block may be used again. 4 matches vanilla's spacing, so holding the
+     * button on one spot behaves exactly as it always has.
+     *
+     * <p>This also has to outlast the round trip to the server. The client predicts the use but the
+     * block does not change until the server's update arrives, so a value below the ping lets the
+     * same block be used twice before it has visibly changed.
      */
-    public int sameBlockDelay = 4;
-
-    /**
-     * How long a used position stays remembered, in ticks. Needs to comfortably outlast the round
-     * trip to the server, or sweeping back onto a block re-uses it before its update arrives.
-     */
-    public int recentBlockTicks = 10;
+    public int sameBlockCooldown = 4;
 
     public static ToolBehaviorConfig get() {
         return instance;

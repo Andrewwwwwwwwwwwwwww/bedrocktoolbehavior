@@ -13,28 +13,35 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Decides how long the client waits before firing the next held right-click.
+ * Paces held right-click so that sweeping a tool across ground works every block it passes.
  *
- * <p>Vanilla waits a flat four ticks, set before it knows what you are pointing at or whether the
- * use will do anything, so holding right-click is capped at five uses a second and a sweep across
- * a field skips blocks. Bedrock feels different because the interaction tracks the crosshair, not
- * a clock.
+ * <p>Vanilla waits a flat four ticks between uses, set before it knows what is under the crosshair
+ * or whether the use will do anything, so holding right-click is capped at five uses a second and
+ * a sweep skips ground.
  *
- * <p>So rather than simply running the clock faster, this keys off movement: a block the crosshair
- * has just arrived at is used immediately, a block it is still sitting on keeps vanilla timing.
- * Each distinct block therefore gets exactly one interaction, never a repeat, which is both what
- * makes the sweep feel right and what keeps the packet rate looking like a player rather than an
- * autoclicker.
+ * <p>Two separate things decide the feel, and they must not share a number:
  *
- * <p>The remembered-positions map is what makes the second half work in multiplayer. The client
- * predicts the use locally but the block does not change until the server's update lands, so
- * without it a position would keep looking untouched — and therefore re-usable — for a whole round
- * trip, stuttering the tool sound and sending duplicate packets.
+ * <ul>
+ *   <li><b>How often the client looks.</b> This is the cooldown vanilla hard-codes, and while it is
+ *       running the client is blind — it cannot notice the crosshair moving onto new ground. So
+ *       while an enabled tool is held this drops to {@code pollDelay}, checking every tick.
+ *   <li><b>Whether the look turns into a use.</b> Rate limiting belongs here instead, per block:
+ *       a position that was just used is refused until {@code sameBlockCooldown} ticks have passed,
+ *       which is enforced by cancelling the interaction rather than by sleeping.
+ * </ul>
  *
- * <p>Eligibility is deliberately just "is this tool enabled", with no attempt to predict whether
- * the use will succeed. Vanilla's own checks live behind private methods that play sounds as a
- * side effect (the axe's strip / scrape / unwax chain in particular), so they cannot be dry-run,
- * and reimplementing them client-side would silently rot the next time they change.
+ * <p>Putting the rate limit in the cooldown instead — the obvious first cut — is what makes a sweep
+ * still skip blocks. The tick after a successful use the crosshair is usually still on the same
+ * block, so a same-block cooldown of four puts the client to sleep for four ticks, and whatever
+ * ground it crosses while asleep is never touched.
+ *
+ * <p>The per-block cooldown also absorbs the multiplayer round trip. The client predicts the use
+ * locally but the block does not change until the server's update lands, so without it a position
+ * keeps looking untouched, and therefore reusable, long enough to fire several times over.
+ *
+ * <p>Nothing here tries to predict whether a use will succeed. Vanilla's own eligibility checks sit
+ * behind private methods that play sounds as a side effect (the axe's strip / scrape / unwax chain
+ * in particular), so they cannot be dry-run, and copying them client-side would rot.
  */
 public final class UseRateTracker {
 
@@ -50,7 +57,7 @@ public final class UseRateTracker {
     private UseRateTracker() {
     }
 
-    /** Advances the clock and forgets positions past their TTL. Called once per client tick. */
+    /** Advances the clock and forgets positions past their cooldown. Once per client tick. */
     public static void onClientTick(Minecraft client) {
         tick++;
 
@@ -61,45 +68,71 @@ public final class UseRateTracker {
         }
         if (recent.isEmpty()) return;
 
-        long ttl = Math.max(1, ToolBehaviorConfig.get().recentBlockTicks);
+        long cooldown = cooldownTicks();
         Iterator<Map.Entry<BlockPos, Long>> it = recent.entrySet().iterator();
         while (it.hasNext()) {
-            if (tick - it.next().getValue() > ttl) it.remove();
+            if (tick - it.next().getValue() > cooldown) it.remove();
         }
     }
 
     /**
      * Stands in for the hard-coded 4 in {@code Minecraft.startUseItem}.
      *
+     * <p>Deliberately unconditional on what the crosshair is pointing at beyond it being a block:
+     * this only decides how often the client gets to look, and looking is what lets it notice new
+     * ground. Whether a look becomes a use is {@link #shouldSuppress} 's job.
+     *
      * @param vanillaDelay the constant being replaced, returned whenever this should not interfere
-     * @return the number of ticks to wait before the next held right-click fires
      */
     public static int delayFor(Minecraft client, int vanillaDelay) {
         ToolBehaviorConfig cfg = ToolBehaviorConfig.get();
         if (!cfg.enabled) return vanillaDelay;
 
         LocalPlayer player = client.player;
-        if (player == null) return vanillaDelay;
+        if (player == null || !holdingEnabledTool(player, cfg)) return vanillaDelay;
 
-        // Blocks only. Entity interactions and empty air keep vanilla timing. The type check is
-        // not redundant: a miss is also reported as a BlockHitResult.
+        // Blocks only. Pointing at air falls through to the item-use path, which has nothing to
+        // rate limit per block, so leave that at vanilla speed rather than polling it every tick.
         if (!(client.hitResult instanceof BlockHitResult hit)
                 || hit.getType() != HitResult.Type.BLOCK) {
             return vanillaDelay;
         }
-        if (!holdingEnabledTool(player, cfg)) return vanillaDelay;
-
-        BlockPos pos = hit.getBlockPos().immutable();
-
-        // Refresh on every look, so a block being stared at never ages out and starts over.
-        Long previous = recent.put(pos, tick);
-        return clamp(previous == null ? cfg.newBlockDelay : cfg.sameBlockDelay);
+        return clamp(cfg.pollDelay);
     }
 
-    /** Either hand counts: startUseItem tries main hand then offhand. */
+    /**
+     * Whether this block interaction should be cancelled outright because the same position was
+     * used moments ago. Only ever true while the faster polling is actually in effect, so vanilla
+     * timing is never interfered with.
+     *
+     * <p>Keyed on position alone rather than on the item: once polling is fast, every interaction
+     * has to be limited, otherwise an offhand tool would speed up whatever is in the main hand.
+     */
+    public static boolean shouldSuppress(LocalPlayer player, BlockHitResult hit) {
+        ToolBehaviorConfig cfg = ToolBehaviorConfig.get();
+        if (!cfg.enabled || !holdingEnabledTool(player, cfg)) return false;
+
+        BlockPos pos = hit.getBlockPos().immutable();
+        Long last = recent.get(pos);
+        if (last != null && tick - last < cooldownTicks()) return true;
+
+        recent.put(pos, tick);
+        return false;
+    }
+
+    private static long cooldownTicks() {
+        return Math.max(1, ToolBehaviorConfig.get().sameBlockCooldown);
+    }
+
+    /**
+     * The main hand decides, so an offhand tool can never accelerate whatever is being held in the
+     * main hand. An offhand tool still counts when the main hand is empty, which is the only case
+     * where vanilla would reach for it anyway.
+     */
     private static boolean holdingEnabledTool(LocalPlayer player, ToolBehaviorConfig cfg) {
-        return isEnabledTool(player.getMainHandItem(), cfg)
-                || isEnabledTool(player.getOffhandItem(), cfg);
+        ItemStack main = player.getMainHandItem();
+        if (isEnabledTool(main, cfg)) return true;
+        return main.isEmpty() && isEnabledTool(player.getOffhandItem(), cfg);
     }
 
     private static boolean isEnabledTool(ItemStack stack, ToolBehaviorConfig cfg) {
