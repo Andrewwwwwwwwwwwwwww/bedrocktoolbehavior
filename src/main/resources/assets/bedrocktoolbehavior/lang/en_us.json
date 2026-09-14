@@ -1,0 +1,8 @@
+{
+  "key.category.bedrocktoolbehavior.keys": "BedrockToolBehavior",
+  "key.bedrocktoolbehavior.toggle": "Toggle Fast Tool Use",
+
+  "bedrocktoolbehavior.msg.toggle": "BedrockToolBehavior",
+  "bedrocktoolbehavior.msg.on": "ON",
+  "bedrocktoolbehavior.msg.off": "OFF"
+}

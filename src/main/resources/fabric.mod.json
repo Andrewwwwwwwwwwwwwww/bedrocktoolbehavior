@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "bedrocktoolbehavior",
+  "version": "${version}",
+  "name": "BedrockToolBehavior",
+  "description": "Holding right-click with a hoe, shovel or axe keeps up with the crosshair instead of ticking along at five uses a second, so sweeping across ground tills, paths or strips every block you pass rather than every fourth one. Client-side, works on vanilla servers.",
+  "authors": ["Andrewwwwwwwwwwwwwww"],
+  "license": "All Rights Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["io.github.andrewwwwwwwwwwwwwww.bedrocktoolbehavior.client.BedrockToolBehaviorClient"]
+  },
+  "mixins": [
+    {
+      "config": "bedrocktoolbehavior.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "contact": {
+    "homepage": "https://github.com/Andrewwwwwwwwwwwwwww/bedrocktoolbehavior",
+    "sources": "https://github.com/Andrewwwwwwwwwwwwwww/bedrocktoolbehavior",
+    "issues": "https://github.com/Andrewwwwwwwwwwwwwww/bedrocktoolbehavior/issues"
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": ">=0.152.1",
+    "minecraft": "~26.2"
+  }
+}
