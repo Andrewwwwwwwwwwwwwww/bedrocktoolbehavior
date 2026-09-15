@@ -56,7 +56,7 @@ Raise `newBlockDelay` to tone the effect down; `4` everywhere is identical to va
 
 ## Install
 
-1. Install [Fabric Loader](https://fabricmc.net/) and [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api) for Minecraft 26.2.
+1. Install [Fabric Loader](https://fabricmc.net/) and [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api) for Minecraft 26.3.
 2. Drop the jar into your `mods` folder (client only — servers don't need it).
 3. Hold right-click with a hoe and sweep.
 

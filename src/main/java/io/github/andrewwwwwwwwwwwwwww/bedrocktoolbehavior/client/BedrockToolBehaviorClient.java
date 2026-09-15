@@ -9,7 +9,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ public class BedrockToolBehaviorClient implements ClientModInitializer {
         KeyMapping.Category category = KeyMapping.Category.register(
                 Identifier.fromNamespaceAndPath(MOD_ID, "keys"));
         toggle = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "key.bedrocktoolbehavior.toggle", GLFW.GLFW_KEY_APOSTROPHE, category));
+                "key.bedrocktoolbehavior.toggle", InputConstants.KEY_APOSTROPHE, category));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ToolBehaviorConfig cfg = ToolBehaviorConfig.get();
