@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0 (2026-09-15)
+
+- Minecraft 26.3 build added (Fabric Loader 0.19.3 → 0.19.5, Fabric API 0.152.1+26.2 → 0.160.5+26.3).
+  The 26.2 build carries on alongside it; the NeoForge build stays on 26.2 until NeoForge ships 26.3.
+- The default toggle key is declared with the 26.3 input constants. Same key (`'`), no change in game.
+
 ## v1.0.0 (2026-09-13)
 
 First release. Client-side hold-to-use pacing for hoes, shovels and axes on Fabric / Minecraft 26.2
